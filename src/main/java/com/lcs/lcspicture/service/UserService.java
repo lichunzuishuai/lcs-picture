@@ -76,8 +76,17 @@ public interface UserService extends IService<User> {
      * 用户注销
      */
     boolean userLogout(HttpServletRequest request);
+
     /*
      * 获取用户查询条件
      */
     QueryWrapper<User> getQueryWrapper(UserQueryRequest userQueryRequest);
+
+    /**
+     * 判断是否是管理员
+     *
+     * @param user 用户
+     * @return 是否是管理员
+     */
+    boolean isAdmin(User user);
 }
