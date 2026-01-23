@@ -4,6 +4,10 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.RandomUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.http.HttpResponse;
+import cn.hutool.http.HttpUtil;
+import cn.hutool.http.Method;
 import com.lcs.lcspicture.config.CosClientConfig;
 import com.lcs.lcspicture.exception.BusinessException;
 import com.lcs.lcspicture.exception.ErrorCode;
@@ -17,10 +21,13 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
+@Deprecated //这是一个废弃掉的方法
 @Slf4j
 @Service
 public class FileManager {
@@ -99,6 +106,90 @@ public class FileManager {
         String suffix = FileUtil.getSuffix(multipartFile.getOriginalFilename());
         final List<String> allowTypes = Arrays.asList("jpeg", "png", "jpg", "webp");
         ThrowUtils.throwIf(!allowTypes.contains(suffix), ErrorCode.FORBIDDEN_ERROR, "文件类型不合法");
+    }
+
+    /*
+    url传图片
+    */
+    public UploadPictureResult uploadPictureByUrl(String fileUrl, String uploadPathPrefix) {
+        //校验文件
+        validPicture(fileUrl);
+        //图片上传地址
+        String UUId = RandomUtil.randomString(16);
+        String originFileName = FileUtil.mainName(fileUrl);
+        String uploadFileName = String.format("%s_%s.%s", DateUtil.formatDate(new Date()), UUId,
+                FileUtil.getSuffix(originFileName));
+        String uploadPath = String.format("/%s/%s", uploadPathPrefix, uploadFileName);
+        File file = null;
+        try {
+            file = File.createTempFile(uploadPath, null);
+            //下载图片
+            HttpUtil.downloadFile(fileUrl, file);
+            PutObjectResult putObjectResult = cosManager.putPictureObject(uploadPath, file);
+            ImageInfo imageInfo = putObjectResult.getCiUploadResult().getOriginalInfo().getImageInfo();
+            int width = imageInfo.getWidth();
+            int height = imageInfo.getHeight();
+            //计算图片的宽高比
+            double picScale = NumberUtil.round(width * 1.0 / height, 2).doubleValue();
+            UploadPictureResult uploadPictureResult = new UploadPictureResult();
+            uploadPictureResult.setUrl(cosClientConfig.getHost() + "/" + uploadPath);
+            uploadPictureResult.setPicName(FileUtil.mainName(uploadFileName));
+            uploadPictureResult.setPicSize(FileUtil.size(file));
+            uploadPictureResult.setPicWidth(width);
+            uploadPictureResult.setPicHeight(height);
+            uploadPictureResult.setPicScale(picScale);
+            uploadPictureResult.setPicFormat(imageInfo.getFormat());
+            return uploadPictureResult;
+        } catch (Exception e) {
+            log.error("picture upload error", e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "图片上传失败");
+        }
+    }
+
+    /*
+    url校验
+    */
+    private void validPicture(String fileUrl) {
+        //1.校验非空
+        ThrowUtils.throwIf(StrUtil.isBlank(fileUrl), ErrorCode.PARAMS_ERROR, "文件url不能为空");
+        //2..校验url格式
+        try {
+            new URL(fileUrl);
+        } catch (MalformedURLException e) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        //3.校验url协议
+        ThrowUtils.throwIf(!fileUrl.startsWith("http://") && !fileUrl.startsWith("https://"),
+                ErrorCode.PARAMS_ERROR, "文件url格式错误");
+        //4.发送HEAD请求验证文件是否存在
+        HttpResponse response = null;
+        try {
+            response = HttpUtil.createRequest(Method.HEAD, fileUrl).execute();
+            if (!response.isOk()) {
+                return;
+            }
+            //5.文件存在，文件类型校验
+            String contentType = response.header("Content-Type");
+            final List<String> ALLOW_TYPES = Arrays.asList("image/jpeg", "image/png", "image/jpg", "image/webp");
+            ThrowUtils.throwIf(!ALLOW_TYPES.contains(contentType.toLowerCase()), ErrorCode.PARAMS_ERROR, "文件类型不支持");
+            //6.文件存在，文件大小校验
+            String contentLength = response.header("Content-Length");
+            if (StrUtil.isNotBlank(contentLength)) {
+                try {
+                    long parseLong = Long.parseLong(contentLength);
+                    //允许最大文件大小
+                    final long MAX_SIZE = 1024 * 1024;
+                    ThrowUtils.throwIf(parseLong > 2 * MAX_SIZE, ErrorCode.PARAMS_ERROR, "文件大小不能超过2M");
+                } catch (NumberFormatException e) {
+                    throw new BusinessException(ErrorCode.PARAMS_ERROR, "文件大小错误");
+                }
+            }
+        } finally {
+            if (response != null) {
+                response.close();
+            }
+        }
+
     }
 
 }

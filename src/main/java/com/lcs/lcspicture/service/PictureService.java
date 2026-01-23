@@ -2,17 +2,16 @@ package com.lcs.lcspicture.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.lcs.lcspicture.model.dto.file.UploadPictureResult;
 import com.lcs.lcspicture.model.dto.picture.PictureQueryRequest;
+import com.lcs.lcspicture.model.dto.picture.PictureReviewRequest;
+import com.lcs.lcspicture.model.dto.picture.PictureUploadByBachRequest;
 import com.lcs.lcspicture.model.dto.picture.PictureUploadRequest;
 import com.lcs.lcspicture.model.entity.Picture;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.lcs.lcspicture.model.entity.User;
 import com.lcs.lcspicture.model.vo.PictureVO;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.List;
 
 /**
  * @author lcs
@@ -23,13 +22,11 @@ public interface PictureService extends IService<Picture> {
     /**
      * 上传图片
      *
-     * @param multipartFile        上传的图片文件
+     * @param inputSource          图片输入源
      * @param pictureUploadRequest 上传图片请求参数
      * @param loginUser            登录用户
      */
-    PictureVO uploadPicture(MultipartFile multipartFile,
-                            PictureUploadRequest pictureUploadRequest,
-                            User loginUser);
+    PictureVO uploadPicture(Object inputSource, PictureUploadRequest pictureUploadRequest, User loginUser);
 
     /**
      * 获取图片查询条件
@@ -50,4 +47,19 @@ public interface PictureService extends IService<Picture> {
      图片数据校验
      */
     void validPicture(Picture picture);
+
+    /*
+    图片审合
+     */
+    void doReviewPicture(PictureReviewRequest pictureReviewRequest, User loginUser);
+
+    /*
+    填充图片审核参数
+     */
+    void fillReviewParams(Picture picture, User loginUser);
+
+    /*
+    批量上传图片
+     */
+    Integer uploadPictureByBatch(PictureUploadByBachRequest pictureUploadByBachRequest, User loginUser);
 }
