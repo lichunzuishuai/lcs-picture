@@ -16,8 +16,8 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/lcs_picture
-    username: root
-    password: 123456
+    username: xxxxxxxxxxxxx
+    password: xxxxxxxxxxxxx
   # Redis 配置
   redis:
     database: 0
@@ -53,9 +53,9 @@ knife4j:
 ##腾讯云对象存储配置
 cos:
   client:
-    host: https://lichunshen-1381464417.cos.ap-guangzhou.myqcloud.com
-    secretId: AKID29B8yi0CGEID1gARUKxNZaODqFUaVFoA
-    secretKey: DF4f3GI7SccUFo9HCuQjpjQvDC0c0B9v
-    region: ap-guangzhou
-    bucket: lichunshen-1381464417
+    host: xxxxxxxxxxxxx
+    secretId: xxxxxxxxxxxxxxxx
+    secretKey: xxxxxxxxxxxxx
+    region: xxxxxxxxxxxxx
+    bucket: xxxxxxxxxxxxx
 
