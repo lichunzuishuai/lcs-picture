@@ -1,24 +1,41 @@
 server:
   port: 8123
   servlet:
-    context-path: /api #设置项目上下文路径 locahost:8123/api
+    context-path: /api #设置项目上下文路径 localhost:8123/api/doc.html
+    session:
+      cookie:
+        max-age: 2592000  # 30天（单位 ： s秒）
 spring:
   application:
     name: lcs-picture
-    #数据库配置
+    # 开放更大的文件上传体积
+  servlet:
+    multipart:
+      max-file-size: 10MB
+  #数据库配置
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306
+    url: jdbc:mysql://localhost:3306/lcs_picture
     username: root
     password: 123456
-    #mybatis-plus配置
+  # Redis 配置
+  redis:
+    database: 0
+    host: localhost
+    port: 6379
+    timeout: 5000
+  session:
+    store-type: redis
+    timeout: 2592000 # 30天（单位 ： s秒）
+  #mybatis-plus配置
 mybatis-plus:
   configuration:
     # 如果项目无日志框架，可以考虑指定为 org.apache.ibatis.logging.stdout.StdOutImpl (请勿在实际生产中使用).
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
     # MyBatis 配置
-    map-underscore-to-camel-case: true
+    map-underscore-to-camel-case: false # 驼峰命名
   global-config:
+    enable-sql-runner: true
     db-config:
       logic-delete-field: isDeleted # 全局逻辑删除的实体字段名
       logic-delete-value: 1 # 逻辑已删除值(默认为 1)
@@ -33,3 +50,12 @@ knife4j:
         api-rule: package
         api-rule-resources:
           - com.lcs.lcspicture.controller
+##腾讯云对象存储配置
+cos:
+  client:
+    host: https://lichunshen-1381464417.cos.ap-guangzhou.myqcloud.com
+    secretId: AKID29B8yi0CGEID1gARUKxNZaODqFUaVFoA
+    secretKey: DF4f3GI7SccUFo9HCuQjpjQvDC0c0B9v
+    region: ap-guangzhou
+    bucket: lichunshen-1381464417
+
