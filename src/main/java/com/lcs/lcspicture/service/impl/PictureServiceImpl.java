@@ -10,6 +10,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.lcs.lcspicture.exception.BusinessException;
 import com.lcs.lcspicture.exception.ErrorCode;
 import com.lcs.lcspicture.exception.ThrowUtils;
+import com.lcs.lcspicture.manager.CosManager;
 import com.lcs.lcspicture.manager.upload.FilePictureUpload;
 import com.lcs.lcspicture.manager.upload.PictureUploadTemplate;
 import com.lcs.lcspicture.manager.upload.UrlPictureUpload;
@@ -28,6 +29,8 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -52,6 +55,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
     private FilePictureUpload filePictureUpload;
     @Resource
     private UrlPictureUpload urlPictureUpload;
+    @Autowired
+    private CosManager cosManager;
 
     /**
      * 上传图片
@@ -90,7 +95,12 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         UploadPictureResult uploadPictureResult = pictureUploadTemplate.uploadPicture(inputSource, uploadPathPrefix);
         //构造要入库的图片信息
         Picture picture = new Picture();
+        //设置原图url
+        picture.setOriginUrl(uploadPictureResult.getOriginUrl());
+        //设置压缩图片url
         picture.setUrl(uploadPictureResult.getUrl());
+        //设置缩略图
+        picture.setThumbnailUrl(uploadPictureResult.getThumbnailUrl());
         //支持外层传递图片名
         String picName = uploadPictureResult.getPicName();
         if (pictureUploadRequest != null && StrUtil.isNotBlank(pictureUploadRequest.getPrefixName())) {
@@ -106,13 +116,19 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         //填充审核参数
         fillReviewParams(picture, loginUser);
         //如果picture不为空，表示更新，否则是更新
+        Picture oldPicture = null;
         if (pictureId != null) {
+            oldPicture = getById(pictureId);
             //如果是更新，需要补充id 和编辑时间
             //通过设置picture.setId(pictureId)，MyBatis-Plus能够识别这是更新而非插入操作因为如果要新增的话相同的id会报错
             picture.setId(pictureId);
             picture.setEditTime(new Date());
         }
         boolean result = this.saveOrUpdate(picture);
+        //如果是更新，需要删除对象存储中的图片
+        if (pictureId != null && oldPicture != null) {
+            this.clearPicture(oldPicture);
+        }
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "图片上传失败");
         return PictureVO.objToVo(picture);
     }
@@ -145,7 +161,12 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         Long reviewerId = pictureQueryRequest.getReviewerId();
         QueryWrapper<Picture> queryWrapper = new QueryWrapper<>();
 
-        queryWrapper.and(qw -> qw.like("name", searchText).or().like("introduction", searchText));
+        if (StrUtil.isNotEmpty(searchText)) {
+            queryWrapper.and(
+                    qw -> qw.like("name", searchText)
+                            .or()
+                            .like("introduction", searchText));
+        }
         queryWrapper.eq(ObjUtil.isNotNull(id), "id", id);
         queryWrapper.eq(ObjUtil.isNotEmpty(userId), "userId", userId);
         queryWrapper.eq(ObjUtil.isNotEmpty(reviewStatus), "reviewStatus", reviewStatus);
@@ -344,6 +365,38 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
             }
         }
         return count;
+
+    }
+
+    /**
+     * 清理图片
+     *
+     * @param picture
+     */
+    @Async
+    @Override
+    public void clearPicture(Picture picture) {
+        //判断该图片是否被多条记录使用
+        String pictureUrl = picture.getUrl();
+        long count = this.lambdaQuery()
+                .eq(Picture::getUrl, pictureUrl)
+                .count();
+        //如果被多条记录使用，则不删除
+        if (count > 1) {
+            return;
+        }
+        //清理压缩图
+        cosManager.deleteObject(pictureUrl);
+        //清理缩略图
+        String thumbnailUrl = picture.getThumbnailUrl();
+        if (StrUtil.isNotEmpty(thumbnailUrl)) {
+            cosManager.deleteObject(thumbnailUrl);
+        }
+        //清理原图
+        String originUrl = picture.getOriginUrl();
+        if (StrUtil.isNotEmpty(originUrl)) {
+            cosManager.deleteObject(originUrl);
+        }
 
     }
 }
