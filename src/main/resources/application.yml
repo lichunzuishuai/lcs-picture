@@ -50,12 +50,4 @@ knife4j:
         api-rule: package
         api-rule-resources:
           - com.lcs.lcspicture.controller
-##腾讯云对象存储配置
-cos:
-  client:
-    host: xxxxxxxxxxxxx
-    secretId: xxxxxxxxxxxxxxxx
-    secretKey: xxxxxxxxxxxxx
-    region: xxxxxxxxxxxxx
-    bucket: xxxxxxxxxxxxx
 
