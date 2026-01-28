@@ -24,5 +24,6 @@ public class PictureUploadByBachRequest implements Serializable {
      */
     private String prefixName;
 
+
     private static final long serialVersionUID = 1L;
 }

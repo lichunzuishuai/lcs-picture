@@ -2,8 +2,6 @@ package com.lcs.lcspicture.model.vo;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.json.JSONUtil;
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
 import com.lcs.lcspicture.model.entity.Picture;
 import lombok.Data;
 
@@ -21,6 +19,10 @@ public class PictureVO implements Serializable {
      * 图片 url
      */
     private String url;
+    /**
+     * 缩略图
+     */
+    private String thumbnailUrl;
 
     /**
      * 图片名称
@@ -89,6 +91,11 @@ public class PictureVO implements Serializable {
      * 创建用户信息
      */
     private UserVO userVO;
+
+    /**
+     * 空间 id
+     */
+    private Long spaceId;
 
     /*
      *封装类转对象

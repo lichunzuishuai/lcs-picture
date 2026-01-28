@@ -2,10 +2,8 @@ package com.lcs.lcspicture.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.lcs.lcspicture.model.dto.picture.PictureQueryRequest;
-import com.lcs.lcspicture.model.dto.picture.PictureReviewRequest;
-import com.lcs.lcspicture.model.dto.picture.PictureUploadByBachRequest;
-import com.lcs.lcspicture.model.dto.picture.PictureUploadRequest;
+import com.lcs.lcspicture.common.DeleteRequest;
+import com.lcs.lcspicture.model.dto.picture.*;
 import com.lcs.lcspicture.model.entity.Picture;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.lcs.lcspicture.model.entity.User;
@@ -63,8 +61,25 @@ public interface PictureService extends IService<Picture> {
      */
     Integer uploadPictureByBatch(PictureUploadByBachRequest pictureUploadByBachRequest, User loginUser);
 
-    /*
-    清理图片
+    /**
+     * 清理图片文件
+     *
+     * @param oldPicture 旧图片
      */
-    void clearPicture(Picture  picture);
+    void clearPictureFile(Picture oldPicture);
+
+    /*
+        删除图片
+         */
+    void deletePicture(DeleteRequest deleteRequest, User loginUser);
+
+    /*
+    编辑图片
+     */
+    boolean editPicture(PictureEditRequest pictureEditRequest, User loginUser);
+
+    /**
+     * 校验空间图片的权限
+     */
+    void checkPictureAuth(User loginUser, Picture picture);
 }
