@@ -103,6 +103,16 @@ public class PictureQueryRequest extends PageRequest implements Serializable {
     private Long spaceId;
 
     /**
+     * 开始编辑时间
+     */
+    private Date startEditTime;
+
+    /**
+     * 结束编辑时间
+     */
+    private Date endEditTime;
+
+    /**
      * 是否只查询spaceId为null的图片
      */
     private Boolean nullSpaceId;

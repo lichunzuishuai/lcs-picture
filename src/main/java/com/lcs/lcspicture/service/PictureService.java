@@ -10,6 +10,7 @@ import com.lcs.lcspicture.model.entity.User;
 import com.lcs.lcspicture.model.vo.PictureVO;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 /**
  * @author lcs
@@ -82,4 +83,14 @@ public interface PictureService extends IService<Picture> {
      * 校验空间图片的权限
      */
     void checkPictureAuth(User loginUser, Picture picture);
+
+    /**
+     * 颜色搜图
+     */
+    List<PictureVO> colorSearch(Long spaceId, String piColor, User loginUser);
+
+    /**
+     * 批量编辑图片
+     */
+    void batchEditPicture(PictureEditByBatchRequest pictureEditByBatchRequest, User loginUser);
 }

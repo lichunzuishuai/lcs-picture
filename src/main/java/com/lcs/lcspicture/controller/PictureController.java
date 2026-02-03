@@ -2,11 +2,14 @@ package com.lcs.lcspicture.controller;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.RandomUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.lcs.lcspicture.annotation.AutoCheck;
+import com.lcs.lcspicture.api.imagesearch.so.SoImageSearchApiFacade;
+import com.lcs.lcspicture.api.imagesearch.so.model.SoImageSearchResult;
 import com.lcs.lcspicture.common.BaseResponse;
 import com.lcs.lcspicture.common.DeleteRequest;
 import com.lcs.lcspicture.common.ResultUtils;
@@ -33,6 +36,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -319,5 +323,56 @@ public class PictureController {
         return ResultUtils.success(true);
     }
 
+    @PostMapping("/search/picture/so")
+    public BaseResponse<List<SoImageSearchResult>> searchPictureByPictureIsSo(@RequestBody SearchPictureByPictureRequest
+                                                                                      searchPictureByPictureRequest) {
+        ThrowUtils.throwIf(searchPictureByPictureRequest == null || searchPictureByPictureRequest.getPictureId() < 0, ErrorCode.PARAMS_ERROR);
+        Long pictureId = searchPictureByPictureRequest.getPictureId();
+        Picture picture = pictureService.getById(pictureId);
+        ThrowUtils.throwIf(picture == null, ErrorCode.NOT_FOUND_ERROR);
+        List<SoImageSearchResult> resultList = new ArrayList<>();
+        int start = 0;
+        while (resultList.size() <= 50) {
+            List<SoImageSearchResult> soImageSearchResults = SoImageSearchApiFacade.searchImage(
+                    StrUtil.isNotBlank(picture.getUrl()) ? picture.getUrl() : picture.getThumbnailUrl(), start);
+            if (soImageSearchResults == null || soImageSearchResults.isEmpty()) {
+                break;
+            }
+            resultList.addAll(soImageSearchResults);
+            start += soImageSearchResults.size();
+        }
+        return ResultUtils.success(resultList);
+    }
+
+    /**
+     * 根据颜色搜索图片
+     *
+     * @param searchPictureByColorRequest 颜色搜索参数
+     * @param request                     请求
+     * @return 图片列表
+     */
+    @PostMapping("/search/picture/color")
+    public BaseResponse<List<PictureVO>> searchPictureByColor(@RequestBody SearchPictureByColorRequest searchPictureByColorRequest,
+                                                              HttpServletRequest request) {
+        ThrowUtils.throwIf(searchPictureByColorRequest == null ||
+                searchPictureByColorRequest.getSpaceId() < 0, ErrorCode.PARAMS_ERROR);
+        String picColor = searchPictureByColorRequest.getPicColor();
+        Long spaceId = searchPictureByColorRequest.getSpaceId();
+        User loginUser = userService.getLoginUser(request);
+        List<PictureVO> pictureVOS = pictureService.colorSearch(spaceId, picColor, loginUser);
+        return ResultUtils.success(pictureVOS);
+    }
+
+    /**
+     * 批量编辑图片
+     */
+    @PostMapping("/edit/batch")
+    public BaseResponse<Boolean> editPictureByBatch(@RequestBody PictureEditByBatchRequest pictureEditByBatchRequest, HttpServletRequest request) {
+        ThrowUtils.throwIf(pictureEditByBatchRequest == null ||
+                pictureEditByBatchRequest.getSpaceId() < 0, ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        pictureService.batchEditPicture(pictureEditByBatchRequest, loginUser);
+        return ResultUtils.success(true);
+    }
 
 }

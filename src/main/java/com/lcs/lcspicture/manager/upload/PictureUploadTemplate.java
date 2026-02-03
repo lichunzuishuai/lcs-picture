@@ -66,7 +66,7 @@ public abstract class PictureUploadTemplate {
                      thumbnail = objectList.get(1);
                 }
                 //5.封装解析得到的图片信息
-                return buildResult(uploadPath, originFileName, ciObject,thumbnail);
+                return buildResult(uploadPath, originFileName, ciObject, thumbnail, imageInfo);
             }
             //5.封装解析得到的图片信息
             return buildResult(originFileName, file, uploadPath, imageInfo);
@@ -85,7 +85,7 @@ public abstract class PictureUploadTemplate {
      * @param ciObject       压缩后的文件信息
      * @return
      */
-    private UploadPictureResult buildResult(String uploadPath, String originFileName, CIObject ciObject, CIObject thumbnail) {
+    private UploadPictureResult buildResult(String uploadPath, String originFileName, CIObject ciObject, CIObject thumbnail, ImageInfo imageInfo) {
         UploadPictureResult uploadPictureResult = new UploadPictureResult();
         Integer width = ciObject.getWidth();
         Integer height = ciObject.getHeight();
@@ -93,6 +93,7 @@ public abstract class PictureUploadTemplate {
         uploadPictureResult.setUrl(cosClientConfig.getHost() + "/" + ciObject.getKey());
         uploadPictureResult.setOriginUrl(cosClientConfig.getHost() + "/" + uploadPath);
         uploadPictureResult.setPicName(originFileName);
+        uploadPictureResult.setPicColor(imageInfo.getAve());
         uploadPictureResult.setPicSize(ciObject.getSize().longValue());
         uploadPictureResult.setPicWidth(ciObject.getWidth());
         uploadPictureResult.setPicHeight(ciObject.getHeight());
@@ -143,6 +144,7 @@ public abstract class PictureUploadTemplate {
         double picScale = NumberUtil.round(width * 1.0 / height, 2).doubleValue();
         uploadPictureResult.setUrl(cosClientConfig.getHost() + "/" + uploadPath);
         uploadPictureResult.setPicName(originFileName);
+        uploadPictureResult.setPicColor(imageInfo.getAve());
         uploadPictureResult.setPicSize(FileUtil.size(file));
         uploadPictureResult.setPicWidth(imageInfo.getWidth());
         uploadPictureResult.setPicHeight(imageInfo.getHeight());
