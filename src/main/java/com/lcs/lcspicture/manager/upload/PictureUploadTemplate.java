@@ -35,45 +35,46 @@ public abstract class PictureUploadTemplate {
      * 定义模版方法
      */
     public final UploadPictureResult uploadPicture(Object inputSource, String uploadFilePrefix) {
-        //1.文件校验
+        // 1.文件校验
         validPicture(inputSource);
-        //2.获取上传地址
+        // 2.获取上传地址
         String uuid = RandomUtil.randomString(16);
         String originFileName = getOriginFileName(inputSource);
         String uploadFileName = String.format("%s_%s.%s", DateUtil.formatDate(new Date()),
                 uuid, FileUtil.getSuffix(originFileName));
-        String uploadPath = String.format("%s/%s", uploadFilePrefix, uploadFileName);
-        //3.获取本地文件
+        String uploadPath = String.format("/%s/%s", uploadFilePrefix, uploadFileName);
+        // 3.获取本地文件
         File file = null;
         try {
-            //创建临时文件
-            file = File.createTempFile(uploadPath, null);
-            //处理文件来源
+            // 创建临时文件
+            file = File.createTempFile(uploadFileName, null);
+            // 处理文件来源
             processFile(inputSource, file);
-            //4.上传到对象存储
+            // 4.上传到对象存储
             PutObjectResult putObjectResult = cosManager.putPictureObject(uploadPath, file);
             ImageInfo imageInfo = putObjectResult.getCiUploadResult().getOriginalInfo().getImageInfo();
-            //获取到图片处理结果
+            // 获取到图片处理结果
             ProcessResults processResults = putObjectResult.getCiUploadResult().getProcessResults();
-            //获得处理转换后的所有图片信息
+            // 获得处理转换后的所有图片信息
             List<CIObject> objectList = processResults.getObjectList();
             if (CollUtil.isNotEmpty(objectList)) {
-                //获取压缩之后的文件信息
+                // 获取压缩之后的文件信息
                 CIObject ciObject = objectList.get(0);
-                //缩略图默认就等于压缩图
+                // 缩略图默认就等于压缩图
                 CIObject thumbnail = ciObject;
-                if(objectList.size() > 1 && ObjUtil.isNotEmpty(objectList.get(1))){
-                     thumbnail = objectList.get(1);
+                if (objectList.size() > 1 && ObjUtil.isNotEmpty(objectList.get(1))) {
+                    thumbnail = objectList.get(1);
                 }
-                //5.封装解析得到的图片信息
+                // 5.封装解析得到的图片信息
                 return buildResult(uploadPath, originFileName, ciObject, thumbnail, imageInfo);
             }
-            //5.封装解析得到的图片信息
+            // 5.封装解析得到的图片信息
             return buildResult(originFileName, file, uploadPath, imageInfo);
         } catch (Exception e) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+            log.error("图片上传失败, inputSource={}", inputSource, e);
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "图片上传失败: " + e.getMessage());
         } finally {
-            //6.删除临时文件
+            // 6.删除临时文件
             deleteTempFile(file);
         }
     }
@@ -85,7 +86,8 @@ public abstract class PictureUploadTemplate {
      * @param ciObject       压缩后的文件信息
      * @return
      */
-    private UploadPictureResult buildResult(String uploadPath, String originFileName, CIObject ciObject, CIObject thumbnail, ImageInfo imageInfo) {
+    private UploadPictureResult buildResult(String uploadPath, String originFileName, CIObject ciObject,
+            CIObject thumbnail, ImageInfo imageInfo) {
         UploadPictureResult uploadPictureResult = new UploadPictureResult();
         Integer width = ciObject.getWidth();
         Integer height = ciObject.getHeight();
@@ -99,7 +101,7 @@ public abstract class PictureUploadTemplate {
         uploadPictureResult.setPicHeight(ciObject.getHeight());
         uploadPictureResult.setPicScale(picScale);
         uploadPictureResult.setPicFormat(ciObject.getFormat());
-        //缩略图
+        // 缩略图
         uploadPictureResult.setThumbnailUrl(cosClientConfig.getHost() + "/" + thumbnail.getKey());
         return uploadPictureResult;
     }
@@ -167,6 +169,5 @@ public abstract class PictureUploadTemplate {
             log.error("file del error={}", file.getAbsolutePath());
         }
     }
-
 
 }

@@ -2,6 +2,7 @@ package com.lcs.lcspicture.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.lcs.lcspicture.api.aliyunai.model.CreateOutPaintingTaskResponse;
 import com.lcs.lcspicture.common.DeleteRequest;
 import com.lcs.lcspicture.model.dto.picture.*;
 import com.lcs.lcspicture.model.entity.Picture;
@@ -93,4 +94,10 @@ public interface PictureService extends IService<Picture> {
      * 批量编辑图片
      */
     void batchEditPicture(PictureEditByBatchRequest pictureEditByBatchRequest, User loginUser);
+
+    /**
+     * Ai扩图
+     */
+    CreateOutPaintingTaskResponse aiExpand(CreatePictureOutPaintingTaskRequest createPictureOutPaintingTaskRequest,
+                                           User loginUser);
 }

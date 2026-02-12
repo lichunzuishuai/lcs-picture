@@ -8,6 +8,9 @@ import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.lcs.lcspicture.api.aliyunai.AliYunAiApi;
+import com.lcs.lcspicture.api.aliyunai.model.CreateOutPaintingTaskRequest;
+import com.lcs.lcspicture.api.aliyunai.model.CreateOutPaintingTaskResponse;
 import com.lcs.lcspicture.common.DeleteRequest;
 import com.lcs.lcspicture.config.CosClientConfig;
 import com.lcs.lcspicture.exception.BusinessException;
@@ -69,7 +72,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
     private TransactionTemplate transactionTemplate;
     @Resource
     private CosClientConfig cosClientConfig;
-
+    @Resource
+    private AliYunAiApi aliYunAiApi;
     /**
      * 上传图片
      *
@@ -716,12 +720,11 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
     }
 
-
     /**
      * nameRule 格式：图片{序号}
      *
      * @param pictureList nameRule
-     * @param nameRule nameRule
+     * @param nameRule    nameRule
      */
     private void fillPictureWithNameRule(List<Picture> pictureList, String nameRule) {
         if (CollUtil.isEmpty(pictureList) || StrUtil.isBlank(nameRule)) {
@@ -739,6 +742,33 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         }
     }
 
+    /**
+     * 创建图片扩图任务
+     *
+     * @param createPictureOutPaintingTaskRequest
+     * @param loginUser
+     * @return
+     */
+    @Override
+    public CreateOutPaintingTaskResponse aiExpand(CreatePictureOutPaintingTaskRequest createPictureOutPaintingTaskRequest,
+                                                  User loginUser) {
+        //参数校验
+        ThrowUtils.throwIf(createPictureOutPaintingTaskRequest == null, ErrorCode.PARAMS_ERROR);
+        ThrowUtils.throwIf(loginUser == null, ErrorCode.NOT_LOGIN_ERROR);
+        Long pictureId = createPictureOutPaintingTaskRequest.getPictureId();
+        Picture picture = this.getById(pictureId);
+        ThrowUtils.throwIf(picture == null, ErrorCode.NOT_FOUND_ERROR, "图片不存在");
+        //权限校验
+        checkPictureAuth(loginUser, picture);
+        String url = picture.getUrl();
+        CreateOutPaintingTaskRequest outPaintingTaskRequest = new CreateOutPaintingTaskRequest();
+        CreateOutPaintingTaskRequest.Input input = new CreateOutPaintingTaskRequest.Input();
+        input.setImageUrl(url);
+        outPaintingTaskRequest.setInput(input);
+        BeanUtil.copyProperties(createPictureOutPaintingTaskRequest, outPaintingTaskRequest);
+        //创建任务
+        return aliYunAiApi.createOutPaintingTask(outPaintingTaskRequest);
+    }
 }
 
 

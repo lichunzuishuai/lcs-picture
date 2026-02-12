@@ -8,6 +8,9 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.lcs.lcspicture.annotation.AutoCheck;
+import com.lcs.lcspicture.api.aliyunai.AliYunAiApi;
+import com.lcs.lcspicture.api.aliyunai.model.CreateOutPaintingTaskResponse;
+import com.lcs.lcspicture.api.aliyunai.model.GetOutPaintingTaskResponse;
 import com.lcs.lcspicture.api.imagesearch.so.SoImageSearchApiFacade;
 import com.lcs.lcspicture.api.imagesearch.so.model.SoImageSearchResult;
 import com.lcs.lcspicture.common.BaseResponse;
@@ -54,7 +57,8 @@ public class PictureController {
     private StringRedisTemplate stringRedisTemplate;
     @Resource
     private SpaceService spaceService;
-
+    @Resource
+    private AliYunAiApi aliYunAiApi;
     private final Cache<String, String> LOCAL_CACHE = Caffeine.newBuilder()
             // 初始容量
             .initialCapacity(1024)
@@ -375,4 +379,28 @@ public class PictureController {
         return ResultUtils.success(true);
     }
 
+    /**
+     * 创建AI扩图人任务
+     */
+    @PostMapping("/out_painting/create_task")
+    public BaseResponse<CreateOutPaintingTaskResponse> aiExpand(@RequestBody CreatePictureOutPaintingTaskRequest createPictureOutPaintingTaskRequest
+            , HttpServletRequest request) {
+        ThrowUtils.throwIf(createPictureOutPaintingTaskRequest == null ||
+                createPictureOutPaintingTaskRequest.getPictureId() < 0, ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        CreateOutPaintingTaskResponse createOutPaintingTaskResponse = pictureService.aiExpand(createPictureOutPaintingTaskRequest, loginUser);
+        return ResultUtils.success(createOutPaintingTaskResponse);
+    }
+
+    /**
+     * 获取AI扩图人任务
+     */
+    @GetMapping("/out_painting/get_task")
+    public BaseResponse<GetOutPaintingTaskResponse> getAiExpandTask(String taskId) {
+        if (StrUtil.isBlank(taskId)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "任务ID不能为空");
+        }
+        GetOutPaintingTaskResponse outPaintingTask = aliYunAiApi.getOutPaintingTask(taskId);
+        return ResultUtils.success(outPaintingTask);
+    }
 }
