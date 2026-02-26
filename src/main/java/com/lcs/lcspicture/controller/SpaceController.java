@@ -48,7 +48,6 @@ public class SpaceController {
         Long spaceId = spaceService.addSpace(spaceAddRequest, loginUser);
         return ResultUtils.success(spaceId);
     }
-
     /**
      * 根据id删除空间
      *
@@ -107,7 +106,7 @@ public class SpaceController {
      */
     @PostMapping("/list/page")
     @AutoCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<Page<Space>> getSpacePageList(@RequestBody SpaceQueryRequest spaceQueryRequest) {
+    public BaseResponse<Page<Space>> listSpaceByPage(@RequestBody SpaceQueryRequest spaceQueryRequest) {
         int current = spaceQueryRequest.getCurrent();
         int pageSize = spaceQueryRequest.getPageSize();
         Page<Space> page = spaceService.page(new Page<>(current, pageSize), spaceService.getQueryWrapper(spaceQueryRequest));
@@ -118,7 +117,7 @@ public class SpaceController {
      * 获取空间列表(封装类)
      */
     @PostMapping("/list/page/vo")
-    public BaseResponse<Page<SpaceVO>> getSpacePageListVO(@RequestBody SpaceQueryRequest spaceQueryRequest, HttpServletRequest request) {
+    public BaseResponse<Page<SpaceVO>> listSpaceVOByPage(@RequestBody SpaceQueryRequest spaceQueryRequest, HttpServletRequest request) {
         int current = spaceQueryRequest.getCurrent();
         int pageSize = spaceQueryRequest.getPageSize();
         //限制爬虫
@@ -195,7 +194,7 @@ public class SpaceController {
      * 获取空间级别列表
      */
     @GetMapping("/list/level")
-    public BaseResponse<List<SpaceLevel>> getSpaceLevelList(){
+    public BaseResponse<List<SpaceLevel>> listSpaceLevel(){
         List<SpaceLevel> collect = Arrays.stream(SpaceLeveEnum.values())
                 .map(spaceLeveEnum ->
                         new SpaceLevel(

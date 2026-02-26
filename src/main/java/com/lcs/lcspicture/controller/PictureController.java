@@ -162,7 +162,7 @@ public class PictureController {
      */
     @PostMapping("/list/page")
     @AutoCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<Page<Picture>> getPicturePageList(@RequestBody PictureQueryRequest pictureQueryRequest) {
+    public BaseResponse<Page<Picture>> listPictureByPage(@RequestBody PictureQueryRequest pictureQueryRequest) {
         int current = pictureQueryRequest.getCurrent();
         int pageSize = pictureQueryRequest.getPageSize();
         Page<Picture> page = pictureService.page(new Page<>(current, pageSize), pictureService.getQueryWrapper(pictureQueryRequest));
@@ -173,7 +173,7 @@ public class PictureController {
      * 获取图片列表(封装类)
      */
     @PostMapping("/list/page/vo")
-    public BaseResponse<Page<PictureVO>> getPicturePageListVO(@RequestBody PictureQueryRequest pictureQueryRequest, HttpServletRequest request) {
+    public BaseResponse<Page<PictureVO>> listPictureVOByPage(@RequestBody PictureQueryRequest pictureQueryRequest, HttpServletRequest request) {
         int current = pictureQueryRequest.getCurrent();
         int pageSize = pictureQueryRequest.getPageSize();
         //限制爬虫
@@ -355,7 +355,7 @@ public class PictureController {
      * @param request                     请求
      * @return 图片列表
      */
-    @PostMapping("/search/picture/color")
+    @PostMapping("/search/color")
     public BaseResponse<List<PictureVO>> searchPictureByColor(@RequestBody SearchPictureByColorRequest searchPictureByColorRequest,
                                                               HttpServletRequest request) {
         ThrowUtils.throwIf(searchPictureByColorRequest == null ||
@@ -393,7 +393,7 @@ public class PictureController {
     }
 
     /**
-     * 获取AI扩图人任务
+     * 获取AI扩图任务
      */
     @GetMapping("/out_painting/get_task")
     public BaseResponse<GetOutPaintingTaskResponse> getAiExpandTask(String taskId) {
