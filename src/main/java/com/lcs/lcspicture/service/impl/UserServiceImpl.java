@@ -10,6 +10,7 @@ import com.lcs.lcspicture.constant.UserConstant;
 import com.lcs.lcspicture.exception.BusinessException;
 import com.lcs.lcspicture.exception.ErrorCode;
 import com.lcs.lcspicture.exception.ThrowUtils;
+import com.lcs.lcspicture.manager.auth.StpKit;
 import com.lcs.lcspicture.model.dto.user.UserQueryRequest;
 import com.lcs.lcspicture.model.entity.User;
 import com.lcs.lcspicture.model.enums.UserRoleEnum;
@@ -19,6 +20,7 @@ import com.lcs.lcspicture.service.UserService;
 import com.lcs.lcspicture.mapper.UserMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
@@ -33,6 +35,7 @@ import java.util.stream.Collectors;
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         implements UserService {
+
     /**
      * 用户注册
      *
@@ -110,6 +113,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
         //4.保存用户的登录状态
         request.getSession().setAttribute(UserConstant.USER_LOGIN_STATE, user);
+        //5.使用StpKit保存用户登录状态
+        StpKit.SPACE.login(user.getId());
+        StpKit.SPACE.getSession().set(UserConstant.USER_LOGIN_STATE, user);
         return this.getLoginUserVO(user);
     }
 
@@ -240,6 +246,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     public boolean isAdmin(User user) {
         return user != null && UserRoleEnum.ADMIN.getValue().equals(user.getUserRole());
     }
+
 }
 
 

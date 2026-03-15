@@ -5,7 +5,9 @@ import com.lcs.lcspicture.model.entity.Space;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 @Data
 public class SpaceVO implements Serializable {
@@ -24,9 +26,19 @@ public class SpaceVO implements Serializable {
     private Integer spaceLevel;
 
     /**
+     * 空间类型：0-私有 1-团队
+     */
+    private Integer spaceType;
+
+    /**
      * 空间图片的最大总大小
      */
     private Long maxSize;
+    /**
+     * 权限列表
+     */
+    private List<String> permissionList = new ArrayList<>();
+
 
     /**
      * 空间图片的最大数量

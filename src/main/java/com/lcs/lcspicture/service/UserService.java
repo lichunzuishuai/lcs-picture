@@ -6,6 +6,7 @@ import com.lcs.lcspicture.model.entity.User;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.lcs.lcspicture.model.vo.LoginUserVO;
 import com.lcs.lcspicture.model.vo.UserVO;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -89,4 +90,5 @@ public interface UserService extends IService<User> {
      * @return 是否是管理员
      */
     boolean isAdmin(User user);
+
 }

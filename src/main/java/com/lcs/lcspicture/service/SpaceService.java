@@ -41,7 +41,7 @@ public interface SpaceService extends IService<Space> {
     /*
      获取单个空间封装类
      */
-    SpaceVO getSpaceVO(Space Space, HttpServletRequest request);
+    SpaceVO getSpaceVO(Space Space);
 
     /**
      * 获取空间列表封装类

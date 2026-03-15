@@ -10,6 +10,7 @@ import com.lcs.lcspicture.constant.UserConstant;
 import com.lcs.lcspicture.exception.BusinessException;
 import com.lcs.lcspicture.exception.ErrorCode;
 import com.lcs.lcspicture.exception.ThrowUtils;
+import com.lcs.lcspicture.manager.auth.SpaceUserAuthManager;
 import com.lcs.lcspicture.model.dto.space.*;
 import com.lcs.lcspicture.model.entity.Space;
 import com.lcs.lcspicture.model.entity.User;
@@ -33,6 +34,8 @@ public class SpaceController {
     private SpaceService spaceService;
     @Resource
     private UserService userService;
+    @Resource
+    private SpaceUserAuthManager spaceUserAuthManager;
 
     /**
      * 创建空间
@@ -42,7 +45,7 @@ public class SpaceController {
      * @return 空间id
      */
     @PostMapping("/add")
-    public BaseResponse<Long> addSpace(SpaceAddRequest spaceAddRequest, HttpServletRequest request) {
+    public BaseResponse<Long> addSpace(@RequestBody SpaceAddRequest spaceAddRequest, HttpServletRequest request) {
         ThrowUtils.throwIf(spaceAddRequest == null, ErrorCode.PARAMS_ERROR);
         User loginUser = userService.getLoginUser(request);
         Long spaceId = spaceService.addSpace(spaceAddRequest, loginUser);
@@ -134,7 +137,7 @@ public class SpaceController {
      */
     @GetMapping("/get")
     @AutoCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<Space> getSpaceById(@RequestParam Long id) {
+    public BaseResponse<Space> getSpaceById(@RequestParam Long id, HttpServletRequest request) {
         ThrowUtils.throwIf(id < 0, ErrorCode.PARAMS_ERROR);
         //判断空间是否存在
         Space space = spaceService.getById(id);
@@ -153,11 +156,15 @@ public class SpaceController {
         ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR);
         //只有空间拥有者可以查看
         User loginUser = userService.getLoginUser(request);
-        if (!space.getUserId().equals(loginUser.getId()) && !userService.isAdmin(loginUser)) {
+        List<String> permissionList = spaceUserAuthManager.getPermissionList(space, loginUser);
+        SpaceVO spaceVO = spaceService.getSpaceVO(space);
+        spaceVO.setPermissionList(permissionList);
+        //已改为使用注解鉴权
+        /*if (!space.getUserId().equals(loginUser.getId()) && !userService.isAdmin(loginUser)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "空间未通过审核，无权查看");
-        }
+        }*/
         // 空间拥有者或管理员可以查看未通过审核的空间
-        return ResultUtils.success(spaceService.getSpaceVO(space, request));
+        return ResultUtils.success(spaceVO);
     }
 
     /*
