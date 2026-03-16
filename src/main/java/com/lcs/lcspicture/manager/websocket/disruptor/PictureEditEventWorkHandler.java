@@ -8,6 +8,8 @@ import com.lcs.lcspicture.manager.websocket.model.PictureEditResponseMessage;
 import com.lcs.lcspicture.model.entity.User;
 import com.lcs.lcspicture.service.UserService;
 import com.lmax.disruptor.WorkHandler;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
@@ -16,8 +18,11 @@ import javax.annotation.Resource;
 /**
  * 图片编辑事件处理(消费者)
  */
+@Component
 public class PictureEditEventWorkHandler implements WorkHandler<PictureEditEvent> {
+
     @Resource
+    @Lazy
     private PictureEditHandler pictureEditHandler;
     @Resource
     private UserService userService;

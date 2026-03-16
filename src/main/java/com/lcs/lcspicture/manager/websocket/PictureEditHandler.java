@@ -51,14 +51,30 @@ public class PictureEditHandler extends TextWebSocketHandler {
         //保存会话到集合中
         User user = (User) session.getAttributes().get("user");
         Long pictureId = (Long) session.getAttributes().get("pictureId");
-        pictureSessions.put(pictureId, ConcurrentHashMap.newKeySet());
-        pictureSessions.get(pictureId).add(session);
+        // 不能覆盖已有会话集合，否则会导致只有“最后一个连接”能收到广播
+        pictureSessions.computeIfAbsent(pictureId, k -> ConcurrentHashMap.newKeySet()).add(session);
+
+        // 如果当前图片已有人在编辑，将编辑状态同步给新加入者（避免提示不一致）
+        Long editingUserId = pictureEditingUsers.get(pictureId);
+        if (editingUserId != null) {
+            User editingUser = userService.getById(editingUserId);
+            if (editingUser != null) {
+                PictureEditResponseMessage enterEditMessage = new PictureEditResponseMessage();
+                enterEditMessage.setType(PictureEditMessageTypeEnum.ENTER_EDIT.getValue());
+                enterEditMessage.setMessage(String.format(" %s 正在编辑图片", editingUser.getUserName()));
+                enterEditMessage.setUser(userService.getUserVO(editingUser));
+                session.sendMessage(new TextMessage(JSONUtil.toJsonStr(enterEditMessage)));
+            }
+        }
+        //这样写如果已经又人在编辑图片了那么后面进来的人不知道当前是谁在编辑图片
+        /*pictureSessions.putIfAbsent(pictureId, ConcurrentHashMap.newKeySet());
+        pictureSessions.get(pictureId).add(session);*/
         //构造响应
         PictureEditResponseMessage responseMessage = new PictureEditResponseMessage();
         responseMessage.setType(PictureEditMessageTypeEnum.INFO.getValue());
         responseMessage.setMessage(String.format(" %s 加入编辑", user.getUserName()));
         responseMessage.setUser(userService.getUserVO(user));
-        //广播给同一张图片的用户
+        //广播给同一张图片的用户,除了自己
         broadcastToPicture(pictureId, responseMessage);
     }
 
@@ -73,8 +89,6 @@ public class PictureEditHandler extends TextWebSocketHandler {
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         // 将消息解析为 PictureEditMessage
         PictureEditRequestMessage pictureEditRequestMessage = JSONUtil.toBean(message.getPayload(), PictureEditRequestMessage.class);
-        String type = pictureEditRequestMessage.getType();
-        PictureEditMessageTypeEnum pictureEditMessageTypeEnum = PictureEditMessageTypeEnum.valueOf(type);
 
         // 从 Session 属性中获取公共参数
         Map<String, Object> attributes = session.getAttributes();
@@ -113,15 +127,24 @@ public class PictureEditHandler extends TextWebSocketHandler {
      */
     public void handleEnterEditMessage(PictureEditRequestMessage pictureEditRequestMessage, WebSocketSession session, User user, Long pictureId) throws IOException {
         //没有用户正在编辑才可以进入编辑
-        if (!pictureEditingUsers.containsKey(pictureId)) {
-            //设置当前用户为正在编辑用户
-            pictureEditingUsers.put(pictureId, user.getId());
+        //  使用原子操作
+        Long previousUser = pictureEditingUsers.putIfAbsent(pictureId, user.getId());
+        if (previousUser == null) {
+            // 成功进入编辑，广播给所有人
             //构造响应
-            PictureEditResponseMessage pictureEditResponseMessage = new PictureEditResponseMessage();
-            pictureEditResponseMessage.setType(PictureEditMessageTypeEnum.ENTER_EDIT.getValue());
-            pictureEditResponseMessage.setMessage(String.format(" %s 开始编辑图片", user.getUserName()));
-            pictureEditResponseMessage.setUser(userService.getUserVO(user));
-            broadcastToPicture(pictureId, pictureEditResponseMessage);
+            PictureEditResponseMessage successMessage = new PictureEditResponseMessage();
+            successMessage.setType(PictureEditMessageTypeEnum.ENTER_EDIT.getValue());
+            successMessage.setMessage(String.format(" %s 开始编辑图片", user.getUserName()));
+            successMessage.setUser(userService.getUserVO(user));
+            broadcastToPicture(pictureId, successMessage);
+        } else {
+            //  已被抢占，只告诉自己
+            PictureEditResponseMessage errorMessage = new PictureEditResponseMessage();
+            errorMessage.setType(PictureEditMessageTypeEnum.ERROR.getValue());
+            errorMessage.setMessage("已有其他用户正在编辑，请稍后再试");
+            errorMessage.setUser(userService.getUserVO(user));
+            //  只发送给当前用户
+            session.sendMessage(new TextMessage(JSONUtil.toJsonStr(errorMessage)));
         }
     }
 

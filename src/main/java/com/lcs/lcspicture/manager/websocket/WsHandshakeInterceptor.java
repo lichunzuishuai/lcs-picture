@@ -1,6 +1,5 @@
 package com.lcs.lcspicture.manager.websocket;
 
-import ch.qos.logback.classic.spi.EventArgUtil;
 import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.StrUtil;
 import com.lcs.lcspicture.manager.auth.SpaceUserAuthManager;
@@ -90,7 +89,7 @@ public class WsHandshakeInterceptor implements HandshakeInterceptor {
             }
             //设置用户登录信息等属性到WebSocket回话当中
             attributes.put("user", loginUser);
-            attributes.put("useId", loginUser.getId());
+            attributes.put("userId", loginUser.getId());
             attributes.put("pictureId", Long.valueOf(pictureId));//记得转为Long
         }
         return true;
